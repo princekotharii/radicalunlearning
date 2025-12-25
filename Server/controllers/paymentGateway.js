@@ -14,6 +14,8 @@ import {
 
 export async function createCheckoutSession(req , res) {
   const { learnerName, amount, educatorId, topic } = req.body;
+  console.log('amount', amount);
+  
   const token = req.cookies.accessToken;
 
   if (!token) {
@@ -33,7 +35,7 @@ export async function createCheckoutSession(req , res) {
             product_data: {
               name: `Session Booking Fee - ${learnerName}`,
             },
-            unit_amount: amount,
+            unit_amount: amount*100,
           },
           quantity: 1,
         },
@@ -105,7 +107,7 @@ console.log('sessionId:', sessionId);
 
   try {
     const record = await PaymentRecord.findOne({ stripeSessionId: sessionId });
-console.log(record);
+console.log('record' , record);
 
     if (!record) {
       return res.status(404).json({ message: "Payment record not found" });
@@ -230,3 +232,4 @@ export const payoutToEducator = async (req, res) => {
     res.status(500).json({ message: 'Payout failed' });
   }
 };
+

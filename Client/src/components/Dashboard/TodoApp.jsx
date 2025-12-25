@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaTrash, FaCheck, FaPlus, FaRegCircle, FaTasks } from 'react-icons/fa';
 import API from '../../common/apis/ServerBaseURL';
 import axios from 'axios'
+import { showNetworkErrorToast } from '../../utils/Notification';
 export default function TodoApp() {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState('');
@@ -12,7 +13,7 @@ export default function TodoApp() {
     if (e) e.preventDefault();
 
     if (!newTodo.trim()) {
-      setError("Todo cannot be empty.");
+      setError("Goal cannot be empty.");
       return;
     }
 
@@ -31,7 +32,12 @@ export default function TodoApp() {
       }
     } catch (error) {
       console.error("Error in addtodos:", error);
-      setError("Failed to add todo. Please try again.");
+      setError("Failed to add goal. Please try again.");
+       if (error.message === "Network Error") {
+        showNetworkErrorToast(
+          "Your Network connection Is Unstable OR Disconected"
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -47,6 +53,11 @@ export default function TodoApp() {
         setTodos(response.data.data.todos);
       }
     } catch (error) {
+       if (error.message === "Network Error") {
+              showNetworkErrorToast(
+                "Your Network connection Is Unstable OR Disconected"
+              );
+            }
       console.error("Error fetching todos:", error);
       setError("Failed to load todos.");
     }
@@ -68,6 +79,11 @@ export default function TodoApp() {
       }
     } catch (err) {
       console.error("Failed to delete todo:", err);
+       if (error.message === "Network Error") {
+        showNetworkErrorToast(
+          "Your Network connection Is Unstable OR Disconected"
+        );
+      }
     }
   };
 
@@ -83,6 +99,11 @@ export default function TodoApp() {
         fetchtodos();
       }
     } catch (err) {
+       if (error.message === "Network Error") {
+        showNetworkErrorToast(
+          "Your Network connection Is Unstable OR Disconected"
+        );
+      }
       console.error("Failed to toggle todo:", err);
     }
   };
@@ -101,9 +122,9 @@ export default function TodoApp() {
 
   return (
     <div className="min-h-screen  p-4 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="w-full max-w-md bg-[] rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+        <div className="bg-[#b4c0b2] px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-white flex items-center">
               <FaTasks className="mr-2" />
@@ -120,7 +141,7 @@ export default function TodoApp() {
             <div className="mt-3">
               <div className="w-full bg-white/20 rounded-full h-2">
                 <div 
-                  className="bg-white h-2 rounded-full transition-all duration-500" 
+                  className="bg-[#faf3dd] h-2 rounded-full transition-all duration-500" 
                   style={{ width: `${percentComplete}%` }}
                 ></div>
               </div>
@@ -144,7 +165,7 @@ export default function TodoApp() {
               value={newTodo}
               onChange={(e) => setNewTodo(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Add a new task..."
+              placeholder="Type here to create a goal."
               className="flex-1 p-3 border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button 
@@ -170,8 +191,8 @@ export default function TodoApp() {
                 key={index}
                 className={`group flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
                   todo?.completed 
-                    ? 'bg-blue-50 border border-blue-100' 
-                    : 'bg-white border border-gray-100 hover:border-blue-200 hover:shadow-md'
+                    ? 'bg-[#868674] border border-blue-100' 
+                    : 'bg-[#f2c078] border border-gray-100 hover:border-blue-200 hover:shadow-md'
                 }`}
               >
                 <div className="flex items-center">
@@ -193,7 +214,7 @@ export default function TodoApp() {
                 
                 <button
                   onClick={() => deleteTodo(todo?._id)}
-                  className="p-2 text-gray-400 hover:text-red-500 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                  className="p-2 text-[#ff6b6b] hover:text-red-500 rounded-full transition-colors  group-hover:opacity-100 cursor-pointer"
                   aria-label="Delete task"
                 >
                   <FaTrash size={14} />

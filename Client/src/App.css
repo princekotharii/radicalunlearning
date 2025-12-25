@@ -1,11 +1,11 @@
 body{
-  background-color: #020817;
+  background-color: #faf3dd ;
   /* background-color: #f0eee1 ; */
   /* background-color: #b4c0b2; */
 }
 
 #root {
-  /* background: #1F1300; */
+  /* background: #faf3dd; */
   max-width: 1680px;
   min-height:fit-content;
   margin: 0 auto;
@@ -71,32 +71,65 @@ body{
   /* font-variation-settings:
     "wdth" 100; */
 }
+/* notification */
 
+/* Glassy, bordered toast */
 .custom-toast {
-  background: rgba(20, 83, 45, 0.2); 
-  border: 1px solid #4ade80;        
-  border-radius: 12px;
-  padding: 16px;
-  color: white;
-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-
-.custom-toast.pulse {
-  animation: pulseEffect 1.5s infinite;
+.custome-toast-border-success{
+border-left: 5px solid #22c55e; 
+border-radius: 9px;
+background: rgba(34, 197, 94, 0.2);
+}
+.custome-toast-border-error{
+border-left: 5px solid #ec7564; 
+border-radius: 9px;
+background:rgba(236, 118, 100, 0.2);
+}
+.custome-toast-border-warn{
+border-left: 5px solid #f4cf42; 
+border-radius: 9px;
+background:rgba(244, 208, 66, 0.2);
+}
+.custome-toast-security-alert{
+border-left: 5px solid #00b8db; 
+border-radius: 9px;
+background:rgba(0, 183, 219, 0.2);
+}
+.custome-toast-network-alert{
+border-left: 5px solid #ad3bea; 
+border-radius: 9px;
+background:rgba(152, 16, 250, 0.2);
 }
 
-@keyframes pulseEffect {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); /* bg-green-400 */
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);  /* fading out */
-  }
+.cyan{
+background-color: #00b8db;
+}
+.purple{
+background-color: #9500ff;
 }
 
-
-.custom-toast-progress {
-  background: #22c55e;
-  height: 4px;
+.icon1{
+  padding: 1px;
+  border-radius: 50%;
+  background-color: rgba(34, 197, 94, 0.2);
+}
+.icon2{
+  padding: 1px;
+  border-radius: 50%;
+background:rgba(236, 118, 100, 0.2);}
+.icon3{
+  padding: 1px;
+  border-radius: 50%;
+background:rgba(244, 208, 66, 0.2);
+}
+.icon4{
+  padding: 1px;
+  border-radius: 50%;
+background:rgba(0, 183, 219, 0.2);
 }

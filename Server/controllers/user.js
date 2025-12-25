@@ -7,6 +7,7 @@ import {
 } from "../models/user.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendEmail } from "../utils/emailSender.js";
 
 
 // --------------------------User-registration-------------------------------------------
@@ -101,9 +102,9 @@ export async function registerLearnerController(request, response) {
   }
 }
 
-export async function registerEducatorController(request, response) { try { const { name, email, password, role, subrole, country, language, phone, dob, address, bio, experience, subjects, serviceType, sessionfee, payoutMethod, upiId, bankAccount, ifscCode, paypalEmail, otherPayout, documentUrl, videoUrl, profileUrl, terms1, terms2, terms3, terms4, terms5, } = request.body;
+export async function registerEducatorController(request, response) { try { const { name, email, password, role, subrole, country, language, phone, dob, address, bio, experience, subjects, serviceType, sessionfee,  documentUrl, videoUrl, profileUrl, terms1, terms2, terms3, terms4, terms5, } = request.body;
 
-console.log("Received payload:", request.body);
+// console.log("Received payload:", request.body);
 
 if (!name || !email || !password || !role || !subrole || !country || !language || !bio || !serviceType) {
   return response.status(400).json({
@@ -138,37 +139,37 @@ if (!terms1 || !terms2 || !terms3 || !terms4 || !terms5) {
   });
 }
 
-if (payoutMethod === "upi" && !upiId) {
-  return response.status(400).json({
-    message: "UPI ID is required",
-    error: true,
-    success: false,
-  });
-}
+// if (payoutMethod === "upi" && !upiId) {
+//   return response.status(400).json({
+//     message: "UPI ID is required",
+//     error: true,
+//     success: false,
+//   });
+// }
 
-if (payoutMethod === "bank" && (!bankAccount || !ifscCode)) {
-  return response.status(400).json({
-    message: "Bank account and IFSC code are required",
-    error: true,
-    success: false,
-  });
-}
+// if (payoutMethod === "bank" && (!bankAccount || !ifscCode)) {
+//   return response.status(400).json({
+//     message: "Bank account and IFSC code are required",
+//     error: true,
+//     success: false,
+//   });
+// }
 
-if (payoutMethod === "paypal" && !paypalEmail) {
-  return response.status(400).json({
-    message: "PayPal email is required",
-    error: true,
-    success: false,
-  });
-}
+// if (payoutMethod === "paypal" && !paypalEmail) {
+//   return response.status(400).json({
+//     message: "PayPal email is required",
+//     error: true,
+//     success: false,
+//   });
+// }
 
-if (payoutMethod === "other" && !otherPayout) {
-  return response.status(400).json({
-    message: "Other payout method details are required",
-    error: true,
-    success: false,
-  });
-}
+// if (payoutMethod === "other" && !otherPayout) {
+//   return response.status(400).json({
+//     message: "Other payout method details are required",
+//     error: true,
+//     success: false,
+//   });
+// }
 
 const normalizedEmail = email.toLowerCase();
 const existingUser = await EducatorUserModel.findOne({ email: normalizedEmail });
@@ -199,12 +200,12 @@ const newUser = new EducatorUserModel({
   subjects,
   serviceType,
   sessionfee,
-  payoutMethod,
-  upiId,
-  bankAccount,
-  ifscCode,
-  paypalEmail,
-  otherPayout,
+  // payoutMethod,
+  // upiId,
+  // bankAccount,
+  // ifscCode,
+  // paypalEmail,
+  // otherPayout,
   documentUrl,
   videoUrl,
   profileUrl,
@@ -217,13 +218,108 @@ const newUser = new EducatorUserModel({
 
 const savedUser = await newUser.save();
 const { password: _, ...userWithoutPassword } = savedUser.toObject();
+const subject = "Welcome to Our Educator Platform!";
+const html = `
+<div style="margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;  background: linear-gradient(135deg, #f2c078 0%, #b4c0b2 100%); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; min-height: 100vh;">
+     <div style="padding: 40px 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div style="max-width: 800px; width: 100%; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(15px); border-radius: 24px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(242, 192, 120, 0.1); overflow: hidden; position: relative; border: 1px solid rgba(255, 255, 255, 0.2);">
 
+      <!-- Decorative top border -->
+      <div style="height: 4px; background: linear-gradient(90deg, #f2c078 0%, #b4c0b2 50%, #f2c078 100%);"></div>
+
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #f2c078 0%, #b4c0b2 100%); padding: 30px 40px 70px; text-align: center; position: relative; overflow: hidden;">
+        <!-- Decorative SVG background -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><defs><pattern id=&quot;grain&quot; width=&quot;100&quot; height=&quot;100&quot; patternUnits=&quot;userSpaceOnUse&quot;><circle cx=&quot;20&quot; cy=&quot;20&quot; r=&quot;1.5&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.1&quot;/><circle cx=&quot;80&quot; cy=&quot;30&quot; r=&quot;1&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.08&quot;/><circle cx=&quot;60&quot; cy=&quot;70&quot; r=&quot;0.8&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.06&quot;/><circle cx=&quot;30&quot; cy=&quot;80&quot; r=&quot;1.2&quot; fill=&quot;%23ffffff&quot; opacity=&quot;0.09&quot;/></pattern></defs><rect width=&quot;100&quot; height=&quot;100&quot; fill=&quot;url(%23grain)&quot;/></svg>');"></div>
+        <div style="position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; backdrop-filter: blur(10px);"></div>
+        <div style="position: absolute; top: 40px; right: 30px; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.08); border-radius: 50%; backdrop-filter: blur(8px);"></div>
+        <div style="position: absolute; bottom: 30px; left: 50px; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.12); border-radius: 50%;"></div>
+
+        <div style="position: relative; z-index: 1;">
+          <div style="width: 90px; height: 90px; background: rgba(255, 255, 255, 0.25); border-radius: 50%; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(15px); border: 3px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);">
+            <span style="font-size: 36px;">🎓</span>
+          </div>
+          <h1 style="color: #2c3e50; font-size: 32px; font-weight: 800; margin: 0;">Welcome to Our Platform!</h1>
+          <p style="color: #34495e; font-size: 18px; margin-top: 16px;">Your educator journey begins here</p>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div style="padding: 30px 20px; margin-top: -25px; position: relative; z-index: 2; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #faf3dd 0%, #ffffff 100%); border-radius: 20px; padding: 25px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08), 0 5px 15px rgba(242, 192, 120, 0.1); margin-bottom: 36px; border: 1px solid rgba(242, 192, 120, 0.1); position: relative; overflow: hidden;">
+          <div style="position: relative; z-index: 1;">
+            <h2 style="color: #2c3e50; font-size: 26px; font-weight: 700; display: flex; align-items: center; gap: 16px;">
+              <span style="background: linear-gradient(135deg, #f2c078, #b4c0b2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎉</span>
+              Congratulations, ${name}!
+            </h2>
+            <p style="color: #4a5568; font-size: 17px; margin-top: 20px;">
+              You have successfully signed up as an educator on our platform. We're absolutely thrilled to have you join our community of passionate educators who are making a real difference in the world of learning!
+            </p>
+
+            <!-- What's Next -->
+            <div style="background: #f8f9fa; border-left: 5px solid #f2c078; padding: 20px; border-radius: 16px; margin: 28px 0;">
+              <h3 style="color: #2c3e50; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+                <span style="background: linear-gradient(135deg, #f2c078, #b4c0b2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">⏳</span>
+                What's Next?
+              </h3>
+              <p style="color: #4a5568; font-size: 16px; margin-top: 16px;">
+                Our team is currently reviewing your documents and verifying your credentials with the utmost care. This process typically takes 1–2 business days to ensure the highest quality standards.
+              </p>
+              <p style="color: #4a5568; font-size: 16px;">
+                Once approved, you'll receive an email and can begin teaching right away.
+              </p>
+            </div>
+
+            <!-- Pro Tip -->
+            <div style="background: rgba(242, 192, 120, 0.08); border-radius: 16px; padding: 24px; margin: 28px 0;">
+              <p style="color: #4a5568; font-size: 15px;">
+                <span style="font-size: 20px; margin-right: 10px;">💡</span>
+                <strong>Pro tip:</strong> While you wait, explore our educator resources and community guidelines in your welcome packet.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="text-align: center;">
+          <a href="https://radical-unlearning.com/dashboard/educator" style="display: inline-block; background: linear-gradient(135deg, #f2c078 0%, #b4c0b2 100%); color: #2c3e50; text-decoration: none; padding: 18px 36px; border-radius: 50px; font-weight: 700; font-size: 16px; margin: 0 10px 12px; text-transform: uppercase;">Visit Dashboard</a>
+          <a href="https://radical-unlearning.com/dashboard/educator" style="display: inline-block; background: #ffffff; color: #2c3e50; text-decoration: none; padding: 18px 36px; border-radius: 50px; font-weight: 700; font-size: 16px; border: 2px solid #f2c078; margin: 0 10px 12px; text-transform: uppercase;">Download Resources</a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: linear-gradient(135deg, #faf3dd 0%, #f8f9fa 100%); padding: 40px; border-top: 1px solid rgba(242, 192, 120, 0.2); text-align: center;">
+        <p style="color: #4a5568; font-size: 16px;">Need help? We're here for you!</p>
+        <div style="display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;">
+          <a href="#" style="color: #2c3e50; text-decoration: none;">📧 Support Center</a>
+          <a href="https://radical-unlearning.com/dashboard/educator" style="color: #2c3e50; text-decoration: none;">💬 Live Chat</a>
+          <a href="https://radical-unlearning.com/dashboard/educator" style="color: #2c3e50; text-decoration: none;">📚 Help Docs</a>
+        </div>
+        <hr style="margin: 32px auto; width: 60%; border: none; height: 2px; background: linear-gradient(90deg, transparent 0%, #f2c078 50%, transparent 100%); opacity: 0.3;" />
+        <p style="color: #4a5568; font-size: 16px;">
+          Best regards,<br />
+          <strong style="color: #2c3e50;">Radical Unlearning Team</strong>
+        </p>
+        <p style="color: #7a8799; font-size: 13px;">
+          © 2025 Radical Unlearning. All rights reserved. <br />
+          <a href="https://radical-unlearning.com/dashboard/educator" style="color: #7a8799;">Unsubscribe</a> |
+          <a href="https://radical-unlearning.com/dashboard/educator" style="color: #7a8799;">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+await sendEmail(normalizedEmail, subject, html);
 return response.status(201).json({
   message: "User registered successfully",
   success: true,
   error: false,
   data: userWithoutPassword,
 });
+
+
 
 } catch (error) { console.error("Registration error:", error); return response.status(500).json({ message: error.message || "Internal server error", error: true, success: false, }); } }
 
@@ -320,6 +416,9 @@ export async function signin(request, response) {
       });
     }
 
+    console.log(user);
+    
+
     if (!user) {
       return response.status(404).json({
         message: "No user found",
@@ -357,7 +456,7 @@ export async function signin(request, response) {
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       {
-        expiresIn: "8h",
+        expiresIn: "7d",
       }
     );
     const refreshToken = jwt.sign(
@@ -423,21 +522,28 @@ export async function signin(request, response) {
 export async function updateUserDetails(req, res) {
   try {
     const token = req.cookies.accessToken;
-    console.log(token);
 
     if (!token) {
-      return res.status(400).json({ message: "Missing token or todo" });
+      return res.status(401).json({ message: "Missing access token", error: true, success: false });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({ message: "Access token expired, please login again", error: true, success: false });
+      }
+      return res.status(403).json({ message: "Invalid token", error: true, success: false });
+    }
+
     const userId = decoded.id;
     const role = decoded.role.toUpperCase();
 
     let updateUser;
 
     if (role === "LEARNER") {
-      const { name, email, country, language, bio , avatar } = req.body;
-      console.log("updateUserDetails:", req.body);
+      const { name, email, country, language, bio, avatar } = req.body;
       
       updateUser = await LearnerUserModel.updateOne(
         { _id: userId },
@@ -451,11 +557,7 @@ export async function updateUserDetails(req, res) {
         }
       );
     } else if (role === "EDUCATOR") {
-      const {
-        bio,
-        experience,
-        avatar
-      } = req.body;
+      const { bio, experience, avatar } = req.body;
 
       updateUser = await EducatorUserModel.updateOne(
         { _id: userId },
@@ -467,20 +569,22 @@ export async function updateUserDetails(req, res) {
       );
     }
 
-    return res.json({
+    return res.status(200).json({
       message: "Updated successfully",
       error: false,
       success: true,
       data: updateUser,
     });
   } catch (error) {
+    console.error("Error updating user:", error);
     return res.status(500).json({
-      message: error.message || error,
+      message: "Internal server error",
       error: true,
       success: false,
     });
   }
 }
+
 
 export async function signout(request, response) {
   console.log('sign out');
@@ -525,7 +629,6 @@ export async function searchEducator(req, res) {
       suspended: 'NO'         // Ensures only non-suspended educators are returned
     })
     .select('name country bio _id subjects documentUrl videoUrl ');
-console.log(educators);
 
     if (educators.length > 0) {
       res.status(200).json({
@@ -558,68 +661,100 @@ export async function addtodos(req, res) {
   const { newtodo } = req.body;
 
   if (!token || !newtodo?.trim()) {
-    return res.status(400).json({ message: "Missing token or todo" });
+    return res.status(400).json({ message: "Missing token or todo", success: false, error: true });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Access token expired, please login again.", success: false, error: true });
+    }
+    return res.status(403).json({ message: "Invalid access token", success: false, error: true });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
 
     const todoItem = {
       text: newtodo.trim(),
-      completed: false
+      completed: false,
     };
 
     const learner = await LearnerUserModel.findByIdAndUpdate(
       userId,
-      { $push: { todos: todoItem } }, 
+      { $push: { todos: todoItem } },
       { new: true, runValidators: true }
     );
 
     if (!learner) {
-      return res.status(404).json({ message: "Learner not found" });
+      return res.status(404).json({ message: "Learner not found", success: false, error: true });
     }
 
     res.status(200).json({
       message: "Todo added successfully",
       data: learner.todos,
       success: true,
-      error: false
+      error: false,
     });
   } catch (error) {
     console.error("Error updating todos:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error",
       error: error.message,
-      success: false 
+      success: false,
     });
   }
 }
 
 export async function fetchtodos(req, res) {
   const token = req.cookies.accessToken;
-  
+
   if (!token) {
-    return res.status(400).json({ message: "Missing token or todo" });
+    return res.status(400).json({
+      message: "Missing access token",
+      success: false,
+      error: true,
+    });
   }
+
+  let decoded;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id
-    const alltodos = await LearnerUserModel.findById(userId).select('todos')
-   
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "Access token expired, please login again",
+        success: false,
+        error: true,
+      });
+    }
+    return res.status(403).json({
+      message: "Invalid access token",
+      success: false,
+      error: true,
+    });
+  }
+
+  try {
+    const userId = decoded.id;
+    const alltodos = await LearnerUserModel.findById(userId).select("todos");
+
     res.status(200).json({
-      message:'fetched all todos successfuly',
-      data:alltodos,
-      error:false,
-      success:true
-    })
+      message: "Fetched all todos successfully",
+      data: alltodos,
+      success: true,
+      error: false,
+    });
   } catch (error) {
+    console.error("Failed to fetch todos:", error);
     res.status(500).json({
-      message:'failed to fetch all todos',
-      error:true,
-      success:false,
-      error
-    })
+      message: "Failed to fetch todos",
+      error: true,
+      success: false,
+      data: null,
+    });
   }
 }
 
@@ -628,35 +763,44 @@ export async function deletetodos(req, res) {
   const { todoid } = req.body;
 
   if (!token || !todoid) {
-    return res.status(400).json({ message: "Missing token or todo ID" });
+    return res.status(400).json({ message: "Missing token or todo ID", success: false, error: true });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Access token expired, please login again", success: false, error: true });
+    }
+    return res.status(403).json({ message: "Invalid access token", success: false, error: true });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
 
     const learner = await LearnerUserModel.findByIdAndUpdate(
       userId,
-      { $pull: { todos: { _id: todoid } } }, // <- remove by matching _id
+      { $pull: { todos: { _id: todoid } } },
       { new: true }
     );
 
     if (!learner) {
-      return res.status(404).json({ message: "Learner not found" });
+      return res.status(404).json({ message: "Learner not found", success: false, error: true });
     }
 
-    res.status(200).json({ 
-      message: "Todo deleted successfully", 
+    res.status(200).json({
+      message: "Todo deleted successfully",
       todos: learner.todos,
       success: true,
-      error: false
+      error: false,
     });
   } catch (error) {
     console.error("Error deleting todo:", error);
-    res.status(500).json({ 
-      message: "Server error", 
+    res.status(500).json({
+      message: "Server error",
       error: error.message,
-      success: false
+      success: false,
     });
   }
 }
@@ -666,196 +810,249 @@ export async function toggleTodoComplete(req, res) {
   const { todoid } = req.body;
 
   if (!token || !todoid) {
-    return res.status(400).json({ message: "Missing token or todo ID" });
+    return res.status(400).json({ message: "Missing token or todo ID", success: false, error: true });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Access token expired, please login again", success: false, error: true });
+    }
+    return res.status(403).json({ message: "Invalid access token", success: false, error: true });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
 
     const learner = await LearnerUserModel.findById(userId);
     if (!learner) {
-      return res.status(404).json({ message: "Learner not found" });
+      return res.status(404).json({ message: "Learner not found", success: false, error: true });
     }
 
-    const todoIndex = learner.todos.findIndex(t => t._id.toString() === todoid);
+    const todoIndex = learner.todos.findIndex((t) => t._id.toString() === todoid);
     if (todoIndex === -1) {
-      return res.status(404).json({ message: "Todo not found" });
+      return res.status(404).json({ message: "Todo not found", success: false, error: true });
     }
 
-    // Toggle the completed field
     learner.todos[todoIndex].completed = !learner.todos[todoIndex].completed;
-
-    // Save the updated learner document
     await learner.save();
 
     res.status(200).json({
       message: "Todo completion toggled successfully",
       data: learner.todos,
       success: true,
-      error: false
+      error: false,
     });
   } catch (error) {
     console.error("Error toggling todo:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      success: false,
+    });
   }
 }
 
-// ---------------------ToggleTheme---------------------------------------------------------------
-
-export const toggleTheme = async (req, res) => {
-  try {
-    // Get token from cookies
-    const token = req.cookies.accessToken;
-    if (!token) {
-      return res.status(401).json({ message: "Access token missing" });
-    }
-
-    // Verify and decode token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-    const { role, id } = decoded;
-
-
-    if (!role || !id) {
-      return res.status(400).json({ message: "Invalid token payload" });
-    }
-
-    let UserModel;
-
-    // Pick the correct model based on role
-    if (role === "learner") {
-      UserModel = LearnerUserModel;
-    } else if (role === "educator") {
-      UserModel = EducatorUserModel;
-    } else if (role === "admin") {
-      UserModel = AdminModel;
-    } else {
-      return res.status(400).json({ message: "Invalid role" });
-    }
-
-    // Find the user
-    const user = await UserModel.findById(id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Toggle theme
-    const newTheme = user.theme === "light" ? "dark" : "light";
-    user.theme = newTheme;
-    await user.save();
-console.log('all done');
-
-    return res.status(200).json({ message: `Theme updated to ${newTheme}`, theme: newTheme });
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Something went wrong" });
-  }
-};
+// ---------------------fetch sessions---------------------------------------
 
 export async function getEducatorSessions(req, res) {
   const token = req.cookies.accessToken;
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-  const { id: educatorId } = jwt.verify(token, process.env.JWT_SECRET);
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized", success: false, error: true });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(err.name === "TokenExpiredError" ? 401 : 403).json({
+      message: err.name === "TokenExpiredError" ? "Access token expired, please login again" : "Invalid token",
+      success: false,
+      error: true
+    });
+  }
 
   try {
+    const educatorId = decoded.id;
     const now = new Date();
 
     const sessions = await SessionModel.find({ educatorId }).populate("learnerId", "name");
-
     const upcoming = sessions.filter(s => new Date(s.scheduledAt) > now);
     const previous = sessions.filter(s => new Date(s.scheduledAt) <= now);
 
-    res.json({ upcoming, previous });
+    res.status(200).json({
+      message: "Educator sessions fetched successfully",
+      upcoming,
+      previous,
+      success: true,
+      error: false
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch educator sessions" });
+    console.error("Error fetching educator sessions:", err);
+    res.status(500).json({
+      message: "Failed to fetch educator sessions",
+      error: true,
+      success: false
+    });
   }
 }
 
 export async function getLearnerSessions(req, res) {
   const token = req.cookies.accessToken;
-  
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-  const { id: learnerId } = jwt.verify(token, process.env.JWT_SECRET);
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized", success: false, error: true });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(err.name === "TokenExpiredError" ? 401 : 403).json({
+      message: err.name === "TokenExpiredError" ? "Token expired" : "Invalid token",
+      success: false,
+      error: true
+    });
+  }
 
   try {
+    const learnerId = decoded.id;
     const now = new Date();
 
     const sessions = await SessionModel.find({ learnerId }).populate("educatorId", "name");
-
     const upcoming = sessions.filter(s => new Date(s.scheduledAt) > now);
     const previous = sessions.filter(s => new Date(s.scheduledAt) <= now);
 
-    res.json({ upcoming, previous });
+    res.status(200).json({
+      message: "Learner sessions fetched successfully",
+      upcoming,
+      previous,
+      success: true,
+      error: false
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch learner sessions" });
+    console.error("Error fetching learner sessions:", err);
+    res.status(500).json({
+      message: "Failed to fetch learner sessions",
+      error: true,
+      success: false
+    });
   }
 }
 
 // -------------------------EducatorWallet-----------------------------------------------------
 
-export async function WithdrawelRequest(req , res) {
-  console.log('WithdrawelRequest initiated');
-  
-  try {
-    const token = req.cookies.accessToken;
+export async function WithdrawelRequest(req, res) {
+  console.log("WithdrawelRequest initiated");
 
-    if(!token){
-      return res.status(401).json({
-        message:"Unauthorised access. Try again or contact to Help@radical-unlearning.com"
-      })
+  const token = req.cookies?.accessToken;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "Unauthorized access. Try again or contact Help@radical-unlearning.com",
+      success: false,
+      error: true,
+    });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(403).json({
+      message: err.name === "TokenExpiredError" ? "Session expired. Please login again." : "Invalid token.",
+      success: false,
+      error: true,
+    });
+  }
+
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Invalid withdrawal amount", success: false, error: true });
     }
 
-    const {id} = jwt.verify(token , process.env.JWT_SECRET);
+    const user = await EducatorUserModel.findById(decoded.id).select("wallet");
 
-    const user = await EducatorUserModel.findById(id).select('wallet');
-    const { amount } = req.body;
-if (user.wallet < amount) {
-  return res.status(400).json({ message: "Insufficient wallet balance" });
-  
-}
+    if (!user) {
+      return res.status(404).json({ message: "Educator not found", success: false, error: true });
+    }
 
-await WithdrawelRequestModel.create({
-  educator: id,
-  amount,
-});
+    if (user.wallet < amount) {
+      return res.status(400).json({ message: "Insufficient wallet balance", success: false, error: true });
+    }
 
-return res.status(200).json({message:"Withdrawel request submitted successfully."})
-    
+    await WithdrawelRequestModel.create({
+      educator: decoded.id,
+      amount,
+    });
+
+    return res.status(200).json({
+      message: "Withdrawal request submitted successfully.",
+      success: true,
+      error: false,
+    });
   } catch (error) {
-    console.error(error); 
-    return res.status(500).json({ message: "Internal server error. Please try again later." });
+    console.error("Error in WithdrawelRequest:", error);
+    return res.status(500).json({
+      message: "Internal server error. Please try again later.",
+      success: false,
+      error: true,
+    });
   }
 }
 
-export async function fetchWalletAmount(req , res) {
+export async function fetchWalletAmount(req, res) {
+  const token = req.cookies?.accessToken;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "Unauthorized",
+      error: true,
+      success: false,
+    });
+  }
+
+  let decoded;
   try {
-    const { token }= req.cookies()
-    if(!token) {
-      res.status(401).json({
-        message:"Unauthorised"
-      })
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(403).json({
+      message: err.name === "TokenExpiredError" ? "Access token expired, please login again" : "Invalid token",
+      error: true,
+      success: false,
+    });
+  }
+
+  try {
+    const walletData = await EducatorUserModel.findById(decoded.id).select("wallet");
+
+    if (!walletData) {
+      return res.status(404).json({
+        message: "Educator not found",
+        data: null,
+        error: true,
+        success: false,
+      });
     }
-    const {id} = jwt.verify(token , process.env.JWT_SECRET);
-    const walletAmount = await EducatorUserModel.findById(id).select(wallet);
 
     res.status(200).json({
-      message:"wallet data fetched successfully",
-      data:walletAmount,
-      error:false,
-      success:true
-    })
+      message: "Wallet data fetched successfully",
+      data: walletData.wallet,
+      error: false,
+      success: true,
+    });
   } catch (error) {
+    console.error("Error fetching wallet data:", error);
     res.status(500).json({
-      message:"Unable to fetch wallet data",
-      data:error,
-      error:true,
-      success:false
-    })
+      message: "Unable to fetch wallet data",
+      data: null,
+      error: true,
+      success: false,
+    });
   }
 }

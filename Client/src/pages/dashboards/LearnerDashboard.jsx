@@ -26,6 +26,7 @@ import {
   FaBookOpen,
   FaUserEdit,
 } from "react-icons/fa";
+import { LuPoundSterling } from "react-icons/lu";
 import { LuBotMessageSquare } from "react-icons/lu";
 import { IoMdClose } from "react-icons/io";
 import GroupChat from "../../components/Chat/GroupChat.jsx";
@@ -33,17 +34,19 @@ import { MdHome } from "react-icons/md";
 import { CiChat1, CiMenuFries, CiLock } from "react-icons/ci";
 import { TbUserSearch } from "react-icons/tb";
 import { MdOutlineSearch } from "react-icons/md";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { clearUser } from "../../store/slices/userSlice.jsx";
 import axios from "axios";
 import AIChat from "../../components/ChatBot/Aichat.jsx";
 import { loadStripe } from "@stripe/stripe-js";
-const stripePromise = loadStripe("pk_test_51RPi0BI60AmMhjB7QXOsnO1d7vsWW7XVoYZnDe4Al7ZoQ7PIgSBdF1l9SE5AekRVZQ1LIFlebCoyrfvFF1vqqgsw00tA0b6Wy1");
+const stripePromise = loadStripe("pk_test_51ReIOAG29xGWG9CnT01F3xstpqxHMWQ7zbh73TpFEty5HfHJw7REQGahb6YThMmEGbR52HDV14k0H8kg9tDLNlqJ007JJUN5ok");
 
 import API from "../../common/apis/ServerBaseURL.jsx";
-import VideoCall from "../../p2p/VideoCall.jsx";
 import TodoApp from "../../components/Dashboard/TodoApp.jsx";
 import { Link } from "react-router-dom";
+import { showErrorToast, showNetworkErrorToast } from "../../utils/Notification.jsx";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 // Dummy data for development
 const dummyUser = {
   name: "Alex Thompson",
@@ -88,7 +91,13 @@ const OverviewTab = ({ darkMode, sessions }) => {
       }
     } catch (error) {
       console.error("Error fetching todos:", error);
-      setError("Failed to load todos.");
+      showErrorToast('Failed to load todos.')
+      showErrorToast(error.response.data.message)
+       if (error.message === "Network Error") {
+              showNetworkErrorToast(
+                "Your Network connection Is Unstable OR Disconected"
+              );
+            }
     }
   };
 
@@ -98,7 +107,7 @@ const OverviewTab = ({ darkMode, sessions }) => {
 
   return (
     <div className="bg-[#faf3dd]">
-      <h1 className="text-2xl font-bold mb-6 ">Dashboard Overview</h1>
+      <h1 className="text-2xl font-bold mb-6 ">Overview</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -159,8 +168,10 @@ const OverviewTab = ({ darkMode, sessions }) => {
 const SearchTab = ({ darkMode, userData }) => {
   const [searchKey, setSearchKey] = useState("");
   const [allEducator, setAllEducator] = useState([]);
+  const [loadingEducatorId, setLoadingEducatorId] = useState(null);
 
   const searcheducator = async () => {
+    
     try {
       const response = await axios.get(API.searchEducator.url, {
         params: {
@@ -173,30 +184,43 @@ const SearchTab = ({ darkMode, userData }) => {
       }
     } catch (error) {
       console.error("Error fetching educators:", error);
+       if (error.message === "Network Error") {
+              showNetworkErrorToast(
+                "Your Network connection Is Unstable OR Disconected"
+              );
+            }
     }
   };
 
-  const handlePay = async (educatorId, amount) => {
-    try {
-      const res = await axios.post(
-        API.createCheckoutSession.url,
-        {
-          learnerName: userData.name,
-          amount,
-          educatorId,
-          topic: searchKey,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+ const handlePay = async (educatorId, amount) => {
+  try {
+    setLoadingEducatorId(educatorId); // Start loading
 
-      const stripe = await stripePromise;
-      await stripe.redirectToCheckout({ sessionId: res.data.sessionId });
-    } catch (error) {
-      console.error("Payment error", error);
+    const res = await axios.post(
+      API.createCheckoutSession.url,
+      {
+        learnerName: userData.name,
+        amount,
+        educatorId,
+        topic: searchKey,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    const stripe = await stripePromise;
+    await stripe.redirectToCheckout({ sessionId: res.data.sessionId });
+  } catch (error) {
+    console.error("Payment error", error);
+    if (error.message === "Network Error") {
+      showNetworkErrorToast("Your Network connection Is Unstable OR Disconnected");
     }
-  };
+  } finally {
+    setLoadingEducatorId(null); // Reset loading state
+  }
+};
+
 
   return (
     <div className="w-full h-auto flex flex-col">
@@ -238,7 +262,7 @@ const SearchTab = ({ darkMode, userData }) => {
                   <div className="flex-shrink-0 mr-4">
                     <div className="rounded-full h-16 w-16 overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center">
                       <img
-                        src="https://amarjha.tech/assets/MyImg-BjWvYtsb.svg"
+                        src={educator.avatar || '/Sample_User_Icon.png'}
                         alt={educator.name}
                         className="h-12 w-12 object-cover"
                       />
@@ -321,18 +345,33 @@ const SearchTab = ({ darkMode, userData }) => {
                         Session Fee
                       </span>
                     </div>
-                    <span className="text-lg font-bold text-blue-600">
-                      $513
+                    <span className="text-lg font-bold text-blue-600 flex justify-center items-center">
+                      <LuPoundSterling />{educator?.sessionFee || 10}
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => handlePay(educator._id, 513)}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg flex items-center justify-center transition-all hover:from-blue-700 hover:to-purple-700"
-                  >
-                    <CiLock className="mr-2 text-lg" />
-                    Pay to Book Session
-                  </button>
+                <button
+  onClick={() => handlePay(educator._id, educator?.sessionFee || 10 )}
+  disabled={loadingEducatorId === educator._id}
+  className={`w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg flex items-center justify-center transition-all 
+    ${loadingEducatorId === educator._id ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-700 hover:to-purple-700'}`}
+>
+  {loadingEducatorId === educator._id ? (
+    <>
+      <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+      Processing...
+    </>
+  ) : (
+    <>
+      <CiLock className="mr-2 text-lg" />
+      Pay to Book Session
+    </>
+  )}
+</button>
+
                 </div>
               </div>
             </div>
@@ -422,7 +461,7 @@ const SessionsTab = ({ darkMode, sessions }) => {
                         </a>
                         <button
                           onClick={() => handleReschedule(session)}
-                          className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md"
+                          className="px-3 py-1 text-xs text-white bg-purple-700 hover:bg-purple-400 cursor-pointer  rounded-md"
                         >
                           Reschedule
                         </button>
@@ -440,7 +479,7 @@ const SessionsTab = ({ darkMode, sessions }) => {
 
         {/* Reschedule Form Modal */}
         {showRescheduleForm && selectedSession && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-amber-100 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className={`w-full max-w-md p-6 rounded-lg `}>
               <h2 className="text-xl font-semibold mb-4">
                 Reschedule: {selectedSession.title}
@@ -589,6 +628,11 @@ const SettingsTab = ({ userData }) => {
     );
     return res.data.secure_url;
   } catch (err) {
+     if (err.message === "Network Error") {
+        showNetworkErrorToast(
+          "Your Network connection Is Unstable OR Disconected"
+        );
+      }
     console.error("Image upload failed", err);
     return null;
   }
@@ -620,7 +664,13 @@ const handleProfileUpdate = async (e) => {
     console.log(response);
     setEditProfile(false);
   } catch (error) {
+    showErrorToast(error.response.data.message)
     console.error("Update failed:", error);
+     if (error.message === "Network Error") {
+        showNetworkErrorToast(
+          "Your Network connection Is Unstable OR Disconected"
+        );
+      }
   } finally {
     setLoading(false);
   }
@@ -896,18 +946,32 @@ const LearnerDashboard = () => {
     setDarkMode(!darkMode);
   };
 
-  const handleSignOut = async () => {
+    const handleSignOut = async() => {
     try {
-      const response = await axios.post(API.signout.url, {
-        withCredentials: true,
-      });
-      if (response.status === 200) {
+      const response = await axios.post(API.signout.url , {
+        withCredentials:true
+      })
+      if(response.status ===200){
         dispatch(clearUser());
       }
-    } catch (error) {}
+    } catch (error) {
+      
+    }
+    
   };
   return (
     <div className={`min-h-screen  text-gray-800`}>
+      <ToastContainer
+  position="top-right"
+  autoClose={4000}
+  hideProgressBar={false}
+  newestOnTop={false}
+  closeOnClick
+  rtl={false}
+  pauseOnFocusLoss
+  draggable
+  pauseOnHover
+/>
       {/* Mobile Sidebar Toggle */}
       <div className="md:hidden p-4 flex justify-between items-center  text-black">
         <h1 className="font-bold ">Radical Unlearning</h1>
@@ -943,7 +1007,7 @@ const LearnerDashboard = () => {
             <img
               src={
                 profileData?.avatar ||
-                "https://amarjha.tech/assets/MyImg-BjWvYtsb.svg"
+                "/Sample_User_Icon.png"
               }
               alt="User Avatar"
               className="w-10 h-10 rounded-full mr-3"
@@ -993,7 +1057,7 @@ const LearnerDashboard = () => {
               className="flex items-center text-red-500 hover:text-red-600 px-3 py-2 rounded-md w-full cursor-pointer"
             >
               <LogOut size={18} className="mr-2" />
-              signOut
+              Sign Out
             </button>
           </div>
         </div>
@@ -1002,28 +1066,28 @@ const LearnerDashboard = () => {
         <div className="flex-1 overflow-x-hidden p-4 md:p-8 md:pl-[35vw] lg:pl-[23vw]">
           {activeTab === "Overview" && (
             <OverviewTab
-              darkMode={darkMode}
+              
               sessions={sessions}
               userData={profileData}
             />
           )}
           {activeTab === "Search For Expert" && (
-            <SearchTab darkMode={darkMode} userData={profileData} />
+            <SearchTab  userData={profileData} />
           )}
           {activeTab === "My Goals" && (
-            <GoalsTab darkMode={darkMode} userData={profileData} />
+            <GoalsTab  userData={profileData} />
           )}
           {activeTab === "Sessions" && (
             <SessionsTab
-              darkMode={darkMode}
+              
               sessions={sessions}
               userData={profileData}
             />
           )}
-          {activeTab === "Community Chat" && <ChatTab darkMode={darkMode} />}
-          {activeTab === "AI Chat Bot" && <ChatBot darkMode={darkMode} />}
+          {activeTab === "Community Chat" && <ChatTab  />}
+          {activeTab === "AI Chat Bot" && <ChatBot  />}
           {activeTab === "Settings" && (
-            <SettingsTab darkMode={darkMode} userData={profileData} />
+            <SettingsTab  userData={profileData} />
           )}
         </div>
       </div>

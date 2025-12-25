@@ -226,6 +226,18 @@ const getWithdrawelRequests = async() =>{
    })
   
    
+   const handlePayout = async(requestId, action)=>{
+    try {
+      const response = await axios.post(API.processWithdrawRequest.url , {requestId , action} ,
+        {withCredentials:true}
+      )
+      console.log(response);
+      
+    } catch (error) {
+      console.log(error);
+      
+    }
+   }
   return (
 
     <div className=" w-[100vw] min-h-screen flex max-w-[1680px] mx-auto ">
@@ -247,8 +259,9 @@ const getWithdrawelRequests = async() =>{
       }
            {
       viewUserDetails && (
-        <div className={` w-[100vw] absolute z-50  flex justify-center`}><UserDetailsList userEmail={email} role={role}/>
-        <span onClick={()=>{setViewUserDetails(false)}} className=' text-black absolute right-5 text-3xl top-0 cursor-pointer'>X</span>
+        <div className={` w-full 2xl:w-[80%]  absolute z-50  flex justify-center`}>
+          <UserDetailsList userEmail={email} role={role}/>
+        <span onClick={()=>{setViewUserDetails(false)}} className=' text-black absolute right-10 text-3xl top-5 cursor-pointer'>X</span>
         </div>
       )
      }
@@ -581,7 +594,7 @@ const getWithdrawelRequests = async() =>{
                   <div className="flex justify-end items-center gap-2">
                     {request.status === 'pending' && (
                       <>
-                        <button className="p-1 rounded-full text-green-600 hover:bg-green-100 ">
+                        <button onClick={()=>{handlePayout(request?._id , "approve")}} className="p-1 rounded-full text-green-600 hover:bg-green-100 ">
                           <CheckCircle className="h-5 w-5" />
                         </button>
                         <button className="p-1 rounded-full text-red-600 hover:bg-red-100 ">
@@ -715,6 +728,12 @@ const getWithdrawelRequests = async() =>{
             scope="col"
             className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider w-1/5 break-words"
           >
+            Role
+          </th>
+          <th
+            scope="col"
+            className="px-3 py-3 text-left text-xs font-medium text-black  uppercase tracking-wider w-1/5 break-words"
+          >
             Request Date
           </th>
           <th
@@ -742,6 +761,9 @@ const getWithdrawelRequests = async() =>{
                 {educator.email}
               </td>
               <td className="px-3 py-4 text-sm font-medium text-gray-900  break-words  text-start">
+                {educator.role}
+              </td>
+              <td className="px-3 py-4 text-sm font-medium text-gray-900  break-words  text-start">
                 {new Date(educator.createdAt).toLocaleDateString()}
               </td>
               <td className="px-3 py-4 whitespace-nowrap text-sm">
@@ -762,7 +784,7 @@ const getWithdrawelRequests = async() =>{
               </td>
               <td
                 onClick={() => {
-                  fetchEducatorsDetailedData(educator.email);
+                  fetchEducatorsDetailedData(educator.email , educator.role);
                 }}
                 className="px-3 py-4 text-sm  text-green-500 cursor-pointer break-words  text-start"
               >

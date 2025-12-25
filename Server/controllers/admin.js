@@ -1,7 +1,8 @@
-import { EducatorUserModel , LearnerUserModel ,  WithdrawelRequestModel} from "../models/user.js";
+import { EducatorUserModel , LearnerUserModel ,  WithdrawelRequestModel , WalletTransactionModel} from "../models/user.js";
 import jwt from 'jsonwebtoken'
 
 import Stripe from 'stripe';
+import { sendEmail } from "../utils/emailSender.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // get all educator data
@@ -137,91 +138,153 @@ export const suspendUser = async (req, resp) => {
 export const approveEducator = async (req, res) => {
   try {
     const { email } = req.body;
-  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     const educator = await EducatorUserModel.findOne({ email });
 
     if (!educator) {
       return res.status(404).json({
-        message: 'Educator not found',
+        message: "Educator not found",
         success: false,
         error: true,
       });
     }
-if(educator.serviceType === "Paid"){
-    // If Stripe account doesn't exist, create one
-// 1. Create the Custom Connect account
-const account = await stripe.accounts.create({
-  type: 'custom',
-  country: educator.country ,
-  email: educator.email,
-  business_type: 'individual',
-  individual: {
-    first_name: educator.name.split(' ')[0] || educator.name,
-    last_name: educator.name.split(' ')[1] || 'LastName',
-    email: educator.email,
-    phone: educator.phone,
-    dob: {
-      day: educator.dob?.day,
-      month: educator.dob?.month,
-      year: educator.dob?.year,
-    },
-    address: {
-      line1: educator.address?.line1,
-      city: educator.address?.city,
-      postal_code: educator.address?.postal_code,
-      country: educator.address?.country ,
-    },
-  },
-  capabilities: {
-    transfers: { requested: true },
-  },
-  tos_acceptance: {
-    date: Math.floor(Date.now() / 1000),
-    ip: ipAddress, // Make sure you capture IP from request
-  },
-});
 
-// 2. Create a bank token for the educator's UK account
-const bankToken = await stripe.tokens.create({
-  bank_account: {
-    country: 'GB',
-    currency: 'GBP',
-    account_holder_name: educator.name,
-    account_holder_type: 'individual',
-    routing_number: educator.ifscCode, // e.g., '108800'
-    account_number: educator.bankAccount, // e.g., '00012345'
-  },
-});
+    let stripeAccountId;
 
-// 3. Attach the external bank account to the custom Stripe account
-await stripe.accounts.createExternalAccount(account.id, {
-  external_account: bankToken.id,
-});
+    // if (educator.serviceType === "Paid" && !educator.stripeAccountId) {
+    //   // 1. Create Stripe Connect Custom Account
+    //   const account = await stripe.accounts.create({
+    //     type: "custom",
+    //     country: educator.country,
+    //     email: educator.email,
+    //     business_type: "individual",
+    //     individual: {
+    //       first_name: educator.name.split(" ")[0] || educator.name,
+    //       last_name: educator.name.split(" ")[1] || "LastName",
+    //       email: educator.email,
+    //       phone: educator.phone,
+    //       dob: {
+    //         day: educator.dob?.day,
+    //         month: educator.dob?.month,
+    //         year: educator.dob?.year,
+    //       },
+    //       address: {
+    //         line1: educator.address?.line1,
+    //         city: educator.address?.city,
+    //         postal_code: educator.address?.postal_code,
+    //         country: educator.address?.country,
+    //       },
+    //     },
+    //     capabilities: {
+    //       transfers: { requested: true },
+    //     },
+    //     tos_acceptance: {
+    //       date: Math.floor(Date.now() / 1000),
+    //       ip: ipAddress,
+    //     },
+    //   });
 
-// 4. Save the account ID in your DB (optional but highly recommended)
-educator.stripeAccountId = account.id;
-await educator.save();
-}
+    //   // console.log("✅ Stripe account created:", account.id);
+    //   stripeAccountId = account.id;
 
+    //   // 2. Create Bank Token
+    //   const bankToken = await stripe.tokens.create({
+    //     bank_account: {
+    //       country: "GB",
+    //       currency: "GBP",
+    //       account_holder_name: educator.name,
+    //       account_holder_type: "individual",
+    //       routing_number: educator.ifscCode,
+    //       account_number: educator.bankAccount,
+    //     },
+    //   });
 
-    // ✅ Mark educator as approved
+    //   // console.log("✅ Bank token created:", bankToken.id);
+
+    //   // 3. Attach external bank account
+    //   await stripe.accounts.createExternalAccount(account.id, {
+    //     external_account: bankToken.id,
+    //   });
+
+    //   // 4. Save Stripe account ID
+    //   educator.stripeAccountId = account.id;
+    //   await educator.save();
+    // } else {
+    //   stripeAccountId = educator.stripeAccountId;
+    // }
+// -----------------------------------------------------------------------
+    // 5. Create Stripe onboarding link
+    // const accountLink = await stripe.accountLinks.create({
+    //   account: stripeAccountId,
+    //   refresh_url: "https://yourdomain.com/stripe/refresh", // Replace with real route
+    //   return_url: "https://yourdomain.com/dashboard",       // Replace with real route
+    //   type: "account_onboarding",
+    // });
+
+    // console.log("✅ Onboarding link created:", accountLink.url);
+
+    // 6. Mark educator as approved
     educator.Approved = true;
     await educator.save();
 
+    // 7. Send modern email with the onboarding link
+  const subject = "Welcome to Our Educator Platform!";
+
+const html = `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #2c3e50; background-color: #faf3dd; padding: 20px; margin: 0;">
+    <div style="max-width: 800px; margin: 0 auto; background: linear-gradient(135deg, #faf3dd 0%, #ffffff 100%); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden;">
+        
+        <!-- Header Section -->
+        <div style="background: linear-gradient(135deg, #f2c078 0%, #b4c0b2 100%); padding: 40px 30px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 16px; display: block;">🎉</div>
+            <h1 style="font-size: 28px; font-weight: 700; color: #2c3e50; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Welcome ${educator.name}!</h1>
+            <p style="font-size: 16px; color: #34495e; opacity: 0.9; font-weight: 400; margin: 0;">You're now part of our educator community</p>
+        </div>
+        
+        <!-- Content Section -->
+        <div style="padding: 40px 30px; background: #ffffff;">
+            <p style="font-size: 16px; color: #2c3e50; margin-bottom: 32px; line-height: 1.7; margin-top: 0;">
+                Congratulations! You've been approved as an educator on our platform. 
+                We're thrilled to have you join our community of passionate educators who are making a difference in learning.
+            </p>
+            
+            <p style="font-size: 16px; color: #2c3e50; margin: 30px 0; text-align: center; font-weight: 500;">
+                🚀 We're excited to see the amazing session you'll provide!
+            </p>
+            
+            <!-- Signature -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #faf3dd; text-align: center;">
+                <p style="font-size: 16px; color: #2c3e50; font-weight: 600; margin: 0;">– The Education Platform Team</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: linear-gradient(135deg, #b4c0b2 0%, #f2c078 100%); padding: 20px 30px; text-align: center;">
+            <p style="font-size: 12px; color: #2c3e50; opacity: 0.8; margin: 0;">
+                This email was sent to ${educator.email} | Education Platform © 2025
+            </p>
+        </div>
+    </div>
+</div>
+`;
+
+await sendEmail(educator.email, subject, html);
+
     res.status(200).json({
-      message: 'Educator approved and Stripe account created',
+      message: "Educator approved and onboarding link sent",
       success: true,
       error: false,
     });
   } catch (error) {
+    console.error("❌ Error approving educator:", error);
     res.status(500).json({
-      message: `Error while approving educator: ${error}`,
+      message: `Error while approving educator: ${error.message}`,
       success: false,
       error: true,
-      
     });
   }
 };
+
 
 
 
@@ -268,53 +331,71 @@ export const getlearnerDataDetails = async(req, res) =>{
 
 // processWithdrawRequest
 export async function processWithdrawRequest(req, res) {
-    const { requestId, action } = req.body; // action = "approve" or "reject"
+  const { requestId, action } = req.body;
+
+  const request = await WithdrawelRequestModel.findById(requestId).populate('educator', 'stripeAccountId');
+  console.log('processWithdrawRequest', request );
+  console.log('amount', request.amount );
   
-    const request = await WithdrawelRequestModel.findById(requestId);
-    if (!request || request.status !== 'pending') {
-      return res.status(404).json({ message: 'Request not found or already processed' });
+  if (!request || request.status !== 'pending') {
+    return res.status(404).json({ message: 'Request not found or already processed' });
+  }
+
+  const educator = await EducatorUserModel.findById(request.educator);
+  if (!educator) {
+    return res.status(404).json({ message: 'Educator not found' });
+  }
+
+  if (action === 'approve') {
+    if (educator.wallet < request.amount) {
+      return res.status(400).json({ message: 'Wallet balance is insufficient' });
     }
-  
-    const educator = await EducatorUserModel.findById(request.educator);
-    if (!educator) {
-      return res.status(404).json({ message: 'Educator not found' });
-    }
-  
-    if (action === 'approve') {
-      // Debit wallet
-      if (educator.wallet < request.amount) {
-        return res.status(400).json({ message: 'Wallet balance is insufficient' });
-      }
-  
+
+    try {
+      // 💸 Stripe Payout
+      const balance = await stripe.balance.retrieve();
+console.log(balance);
+
+      const transfer = await stripe.transfers.create({
+        amount: Math.round(request.amount * 100), 
+        currency: 'GBP',
+        destination: educator.stripeAccountId, 
+        description: `Payout for withdrawal request ${request._id}`,
+      });
+
+      // Update wallet and DB
       educator.wallet -= request.amount;
       await educator.save();
-  
+
       await WalletTransactionModel.create({
         educator: educator._id,
         type: 'debit',
         reason: 'withdrawal',
-        amount: request.amount
+        amount: request.amount,
+        stripeTransferId: transfer.id // optional: save Stripe transfer ID
       });
-  
+
       request.status = 'paid';
       request.processedAt = new Date();
       await request.save();
-  
-      // Later, you can integrate actual payment API like Razorpay/PayPal here
-  
-      return res.json({ message: 'Withdrawal approved and processed' });
-    } else {
-      request.status = 'rejected';
-      await request.save();
-      return res.json({ message: 'Withdrawal rejected' });
+
+      return res.json({ message: 'Withdrawal approved and payout completed via Stripe' });
+    } catch (error) {
+      console.error('Stripe payout error:', error);
+      return res.status(500).json({ message: 'Payout failed', error: error.message });
     }
+  } else {
+    request.status = 'rejected';
+    await request.save();
+    return res.json({ message: 'Withdrawal rejected' });
   }
+}
   
 //   view  withdrawel requests
 export async function getWithdrawelRequests(req, res) {
     try {
       const pendingRequests = await WithdrawelRequestModel.find({ status: 'pending' })
-      .populate('educator', 'name email payoutMethod');
+      .populate('educator', 'name email payoutMethod ');
       
       res.status(200).json(pendingRequests);
     } catch (error) {

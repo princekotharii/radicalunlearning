@@ -25,6 +25,7 @@ const user = useSelector((state) => state?.user);
   pauseOnFocusLoss
   draggable
   pauseOnHover
+  
 />
     <Nav />
     <FloatingSocialIcons />
